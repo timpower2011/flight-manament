@@ -1,0 +1,17 @@
+4
+AH37
+AIRBUS
+5
+12
+MH17
+boeing
+3
+12
+A06
+BOEING
+4
+12
+A12
+AIRLINE
+10
+10
