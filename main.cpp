@@ -173,7 +173,7 @@ void gotoxy(int x, int y)
     COORD c = { x, y };  
     SetConsoleCursorPosition(h,c);
 }
-// H�m t� m�u.
+// doi mau
 void textcolor(int x)
 {
 	HANDLE mau;
