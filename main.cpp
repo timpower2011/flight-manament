@@ -406,8 +406,8 @@ void ChinhSuaMayBay(DS_MAYBAY &l,char sohieuMB[]){
 			goto sohieuMB;
 		}
 		//kiem tra trung	
-		if(KiemTraSoHieuMB(l,temp_sohieuMB) == 1) {
-			cout << "ERROR: SO HIEU DA CO!!! MOI NHAP LAI";
+		if((KiemTraSoHieuMB(l,temp_sohieuMB) == 1) && (strcmp(l.DSMayBay[vitri]->sohieuMB,temp_sohieuMB)!=0)) {
+			cout << "ERROR: SO HIEU DA CO!!! MOI NHAP LAI" << endl;
 		//	ChinhSuaMayBay(l,sohieuMB);	
 			goto sohieuMB;
 		};		
@@ -418,7 +418,7 @@ void ChinhSuaMayBay(DS_MAYBAY &l,char sohieuMB[]){
 		InHoa(loai);
 		if (strlen(loai) == 0) return;
 		if( KiemTraKiTu(loai) == 0) {
-			cout << "ERROR: NHAP SAI!!! MOI NHAP LAI";
+			cout << "ERROR: NHAP SAI!!! MOI NHAP LAI" << endl;
 			Sleep(1000);
 			cout << "Loai: ";
 			goto loai;
