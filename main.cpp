@@ -8,8 +8,15 @@
 #include <string>
 #include <fstream>
 using namespace std;
-#define  MAX 300
-#define MAXHK 1000;
+#define  MAX_MAYBAY 300
+#define MAXHK 1000
+
+#define ASCII_SPACE 32
+#define ASCII_0 48
+#define ASCII_9 57
+#define ASCII_A 65
+#define ASCII_Z 90
+
 
 // thuoc tinh cua mot cai may bay
 typedef struct {
@@ -39,7 +46,7 @@ typedef struct {
 //danh sach may bay
 typedef struct{
 	int soluong = 0;
-	MAYBAY *DSMayBay[MAX];
+	MAYBAY *DSMayBay[MAX_MAYBAY];
 } DS_MAYBAY;
 //cay nhi phan tim kiem
  struct NODE {
@@ -108,9 +115,9 @@ void Search_BTS(DS_HANHKHACH *&root,HANHKHACH &hanhkhach,char cmnd[]){
     if(strcmp(root->hanhkhach.cmnd, cmnd) == 0){
         hanhkhach = root->hanhkhach;
         return;
-    }else if ( strcmp(root->hanhkhach.cmnd , cmnd ) >0 ){
+    }else if ( strcmp(root->hanhkhach.cmnd , cmnd ) > 0 ){
         return Search_BTS( root->left,hanhkhach, cmnd );
-    }else if( strcmp(root->hanhkhach.cmnd , cmnd) <0){
+    }else if( strcmp(root->hanhkhach.cmnd , cmnd) < 0){
         return Search_BTS( root->right,hanhkhach, cmnd );
     }
 }
@@ -259,7 +266,7 @@ static void XuatDanhSach(DS_MAYBAY &l){
 }
 int KiemTraKhoangTrang(char ch[]){
 	for (int i=0; i< strlen(ch); i++){
-		if((int) ch[i] == 32) return 0;
+		if((int) ch[i] == ASCII_SPACE) return 0;
 	}
 	return 1;
 }
@@ -272,7 +279,7 @@ void InHoa(char ch[]){
 int KiemTraSo(string so){
 	//so.c_str(): doi ve kieu char
 	for (int i=0; i< strlen(so.c_str()); i++){
-		if (so[i] < 48 or so[i]>57) return 0;
+		if (so[i] < ASCII_0 or so[i] > ASCII_9) return 0;
 	}
 	return 1;
 }
@@ -302,11 +309,11 @@ int confirm(){
 	if(strcmp(ch,"Y") == 0) return 1;
 	return 0;
 }
-// ky tu 65-90 
+// ky tu 65-ASCII_Z A-Z
 int KiemTraKiTu(char text[]){
 	for(int i=0; i<strlen(text); i++){
-		if( ((int)text[i] <65 || (int)text[i] >90) ) {
-			if (((int)text[i]>47 && (int)text[i] < 58)) continue;
+		if( ((int)text[i] <ASCII_A || (int)text[i] >ASCII_Z) ) {
+			if (((int)text[i] >= ASCII_0 && (int)text[i] <= ASCII_9)) continue;
 			return 0; 
 		}
 	}
@@ -456,11 +463,13 @@ void MenuDanhSachMayBay(DS_MAYBAY &l){
 	// in ra
 	cout << "THEM (T)		XOA(X)			SUA(S)			LUU(L)" << endl;
 	// nhap lua chon
-	cout << "Luachon: "; cin >> chon;
+	cout << "Luachon: ";
+	fflush(stdin);
+	gets(chon);
 	InHoa(chon);
 	
 	// chuyen lua chon sang so de su dung switch...case
-
+	if (strlen(chon)==0) return;
 	if ( strcmp(chon,"T")==0 ) luachon =1;
 	if ( strcmp(chon,"X")==0 ) luachon=2;
 	if ( strcmp(chon,"S")==0 ) luachon=3;
@@ -693,7 +702,7 @@ int KiemTraTrungMaCB(DS_CHUYENBAY &listCB,char *machuyenbay){
 		return 0;
 }
 void ThemChuyenBay(DS_CHUYENBAY &l,DS_MAYBAY &maybay){
-	char maCB[15],loai[100],sanbayden[100],sohieuMB[15];
+	char maCB[15], loai[100], sanbayden[100], sohieuMB[15];
 	system("cls");
 	CHUYENBAY *tempCB = new CHUYENBAY; 
 	l.soluong++;
@@ -1093,6 +1102,7 @@ void MenuDanhSachChuyenBay(DS_CHUYENBAY &l,DS_HANHKHACH *listHK, DS_MAYBAY &mayb
 	gets(chon);
 	InHoa(chon);
 	
+	if (strlen(chon)==0) return;
 	if (strcmp(chon,"T") == 0) luachon = 1;
 	else if (strcmp(chon,"X") == 0) luachon = 2;
 	else if (strcmp(chon,"S") == 0) luachon = 3;
@@ -1102,11 +1112,11 @@ void MenuDanhSachChuyenBay(DS_CHUYENBAY &l,DS_HANHKHACH *listHK, DS_MAYBAY &mayb
 	} else goto y;
 	
 	switch (luachon){
-		case 1:{
+		case 1:{ //Them chuyen bay
 			ThemChuyenBay(l,maybay);
 			break;
 		}
-		case 2:{
+		case 2:{ //Xoa chuyen bay
 			char maCB[15];
 		t:  XuatChuyenBay(l);
 			cout << "Nhap (Thoat) de tro lai. " << endl;
@@ -1120,7 +1130,7 @@ void MenuDanhSachChuyenBay(DS_CHUYENBAY &l,DS_HANHKHACH *listHK, DS_MAYBAY &mayb
 			break;
 		}
 		case 3:{
-			char maCB[15];
+			char maCB[15]; // Save
 			x:  XuatChuyenBay(l);
 			cout << "Nhap (Thoat) de tro lai. " << endl;
 			cout << "Nhap ma chuyen bay sua: "; 
@@ -1249,7 +1259,7 @@ void DatVe(DS_CHUYENBAY &listCB,DS_HANHKHACH *&listHK,CHUYENBAY *cb,HANHKHACH &h
 	char tam,soDay_tam[100]={},soDong_tam[100]={};
 	
 	for (int i=0; i<strlen(soVe); i++){
-		if ( int(soVe[i]) >=48 and int(soVe[i]) <= 57) {
+		if ( int(soVe[i]) >=ASCII_0 and int(soVe[i]) <= ASCII_9) {
 			tam = soVe[i];  
 			strcat(soDong_tam,&tam);
 			continue;
@@ -1285,7 +1295,7 @@ int KiemTraVeDat(CHUYENBAY *tempCB,MAYBAY *tempMB,char soVe[],char cmnd[]){
 	int soDay=0,soDong=0;
 	char tam,soDay_tam[100]={},soDong_tam[100]={};
 	for (int i=0; i<strlen(soVe); i++){		
-		if ( int(soVe[i]) >=48 and int(soVe[i]) <= 57) {
+		if ( int(soVe[i]) >=ASCII_0 and int(soVe[i]) <= ASCII_9) {
 			tam = soVe[i];
 			strcat(soDong_tam,&tam);
 			continue;
@@ -1423,13 +1433,14 @@ x:	system("cls");
 	gotoxy(33,3);
 	cout << "Nhap CMND: ";
 	gets(tempCMND);
-	while(KiemTraSo(tempCMND) == 0  || KiemTraKhoangTrang(tempCMND)==0 ){
+	if (strlen(tempCMND) == 0) return;
+	while(KiemTraSo(tempCMND) == 0  || KiemTraKhoangTrang(tempCMND) == 0 ){
 		system("cls");
 		cout << "CMND La So Va Khong Bo Trong Bo Trong";
 		Sleep(1500);
 		goto x;	
 	}
-	while (atoi(tempCMND)<1 || strlen(tempCMND) !=10 ){
+	while (atoi(tempCMND) < 1 || strlen(tempCMND) != 9 || strlen(tempCMND) != 12 ){
 		system("cls");
 		cout << "CMND Khong Dung";
 		Sleep(1000);
@@ -1749,6 +1760,7 @@ int Menu(){
 	cout << "    8. Thong Ke So Lan May Bay Thuc Hien Chuyen Bay";
 	gotoxy(1,28);
 	cout << endl << "Nhap lua chon cua ban: ";
+	fflush(stdin);
 	gets(chon);
 	luachon = atoi(chon);
 	return luachon;
