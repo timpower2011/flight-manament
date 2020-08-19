@@ -3,6 +3,7 @@
 #include <Windows.h>
 #include <string.h>
 #include <graphics.h>
+#include <time.h>
 #include <math.h>
 #include <iomanip>
 #include <string>
@@ -663,8 +664,7 @@ int KiemTraDate(int ngay,int thang, int nam,int gio, int phut){
     if (ngay < 1 || ngay > 31) 
     return 0; 
   
-    // Handle February month  
-    // with leap year 
+    // Kiem tra ngay thang 2  
     if (thang == 2) 
     { 
         if (KiemTraNamNhuan(nam)) 
@@ -673,10 +673,7 @@ int KiemTraDate(int ngay,int thang, int nam,int gio, int phut){
         return (ngay <= 28); 
     } 
   
-    // Months of April, June,  
-    // Sept and Nov must have  
-    // number of days less than 
-    // or equal to 30. 
+    // thang 4,6,9,11 chi co 30 ngay
     if (thang == 4 || thang == 6 || 
         thang == 9 || thang == 11) {
          if (ngay>30) return 0;
@@ -1079,11 +1076,18 @@ void LoadTK(CHUYENBAY *&cb){
 }
 void LoadCB(DS_CHUYENBAY &l){
 	ifstream readfile;
-	
+	time_t now;
 	readfile.open("ChuyenBay.txt", ios::in);
 	readfile >> l.soluong;
 	for (int i=1; i<=l.soluong; i++){
 		CHUYENBAY *tempCB = new CHUYENBAY;
+	  // struct tm thoiGianCB;
+	  // thoiGianCB.tm_year = tempCB->date.nam - 1900;
+		// now = mktime(&thoiGianCB);
+		// cout << ctime(&now);
+		struct tm  thoiGianCB;
+		time(&now);
+
 		readfile >> tempCB->machuyenbay;
 		readfile >>  tempCB->date.ngay;
 		readfile >>  tempCB->date.thang; 
@@ -1094,6 +1098,17 @@ void LoadCB(DS_CHUYENBAY &l){
 		readfile >>  tempCB->sohieuMB;
 		readfile >>  tempCB->trangthai;
 		readfile >> tempCB->soLuongVe;
+		thoiGianCB.tm_year=tempCB->date.nam-1900;
+		thoiGianCB.tm_mon=tempCB->date.thang-1;
+		thoiGianCB.tm_mday=tempCB->date.ngay;
+		thoiGianCB.tm_hour=tempCB->time.gio;
+		thoiGianCB.tm_min=tempCB->time.phut;
+		thoiGianCB.tm_sec=0;
+
+		time_t thoiGianCB_time = mktime(&thoiGianCB);
+		if (thoiGianCB_time<now && tempCB->trangthai!=0) {
+			tempCB->trangthai=3;
+		}
 		LoadTK(tempCB);
 		ThemNodeChuyenBay(l,tempCB);
 	}
@@ -1764,7 +1779,7 @@ void ThongKeSoLanThucHienChuyenBay(DS_CHUYENBAY &listCB,DS_MAYBAY &listMB){
 
 //menu chinh
 int Menu(){
-	system("cls");
+	// system("cls");
 	char chon[5];
 	int luachon;
 	gotoxy(11,8);
@@ -1794,6 +1809,9 @@ int Menu(){
 	return luachon;
 
 }
+
+
+
 int main(){	
 
 	LoadMB(listMB);
