@@ -642,20 +642,46 @@ void SaveCB(DS_CHUYENBAY &l,DS_HANHKHACH *listHK){
 }
 
 int KiemTraNamNhuan(int year){
-	if (year %100==0 && year % 400 == 0){
-		return 1;
-	} else if ( year % 4 == 0) return 1;
-	
-	return 0;
+//	chia het cho 4  
+// AND khong chia het cho 100. 
+// OR chia het cho 400.
+		if (((year % 4 == 0) && (year % 100 != 0)) || (year % 400 == 0)) {
+				return 1;
+		}
+		return 0;
 }
 
 int KiemTraDate(int ngay,int thang, int nam,int gio, int phut){
-	if ( ngay >31 || ngay <0) return 0;
-	if  (thang > 12 || thang <0) return 0;
-	if (nam < 2020) return 0;
-	if ( ngay==29 && thang==2 && KiemTraNamNhuan(nam)==0 ) return 0;
-	if ( gio > 24 || gio<0) return 0;
+	// if ( ngay >31 || ngay <0) return 0;
+	// if  (thang > 12 || thang <0) return 0;
+	// if (nam < 2020) return 0;
+	// if ( ngay==29 && thang==2 && KiemTraNamNhuan(nam)==0 ) return 0;
+	if (gio > 23 || gio<0) return 0;
 	if (phut > 60 || phut <0) return 0;
+	if (thang < 1 || thang > 12) 
+    return 0; 
+    if (ngay < 1 || ngay > 31) 
+    return 0; 
+  
+    // Handle February month  
+    // with leap year 
+    if (thang == 2) 
+    { 
+        if (KiemTraNamNhuan(nam)) 
+        return (ngay <= 29); 
+        else
+        return (ngay <= 28); 
+    } 
+  
+    // Months of April, June,  
+    // Sept and Nov must have  
+    // number of days less than 
+    // or equal to 30. 
+    if (thang == 4 || thang == 6 || 
+        thang == 9 || thang == 11) {
+         if (ngay>30) return 0;
+				}
+
 	return 1;
 }
 void ThemNodeChuyenBay(DS_CHUYENBAY &l,CHUYENBAY *tempCB){
@@ -756,16 +782,16 @@ void ThemChuyenBay(DS_CHUYENBAY &l,DS_MAYBAY &maybay){
 	fflush(stdin); 
 	gets(nam);
 	if(strlen(nam) == 0 ) return;
-	if( KiemTraSo(nam) == 0 || (atoi(ngay)==29 &&  atoi(thang)==2 && KiemTraNamNhuan(atoi(nam))==0 || atoi(nam) < 2020)){
+	if( KiemTraSo(nam) == 0 || atoi(nam) < 2020){
 		cout << "ERROR: NHAP SAI!!! MOI NHAP LAI" << endl;
 		goto nam;
-	}
+	}///cấcccsc
 	gio:
 	cout << "Gio: ";
 	fflush(stdin);  
 	gets(gio);
 	if(strlen(gio) == 0) return;
-	if(KiemTraSo(gio) == 0 || atoi(gio) > 24 || atoi(gio) <0){
+	if(KiemTraSo(gio) == 0 || atoi(gio) > 23 || atoi(gio) <0){
 		cout << "ERROR: NHAP SAI!!! MOI NHAP LAI" << endl;
 		goto gio;
 	}
@@ -778,7 +804,9 @@ void ThemChuyenBay(DS_CHUYENBAY &l,DS_MAYBAY &maybay){
 		cout << "ERROR: NHAP SAI!!! MOI NHAP LAI" << endl;
 		goto phut;
 	}
-	
+	if (KiemTraDate(atoi(ngay), atoi(thang), atoi(nam) ,atoi(gio), atoi(phut))==0) {
+		goto time;
+	}
 	tempCB->date.ngay = atoi(ngay);
 	tempCB->date.thang = atoi(thang);
 	tempCB->date.nam = atoi(nam);
