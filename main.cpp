@@ -1779,7 +1779,7 @@ void ThongKeSoLanThucHienChuyenBay(DS_CHUYENBAY &listCB,DS_MAYBAY &listMB){
 
 //menu chinh
 int Menu(){
-	// system("cls");
+	system("cls");
 	char chon[5];
 	int luachon;
 	gotoxy(11,8);
