@@ -12,6 +12,12 @@ using namespace std;
 #define  MAX_MAYBAY 300
 #define MAXHK 1000;
 
+#define ASCII_SPACE 32
+#define ASCII_0 48
+#define ASCII_9 57
+#define ASCII_A 65
+#define ASCII_Z 90
+
 // thuoc tinh cua mot cai may bay
 typedef struct {
 	char sohieuMB[15];
@@ -783,7 +789,7 @@ void ThemChuyenBay(DS_CHUYENBAY &l,DS_MAYBAY &maybay){
 	fflush(stdin);  
 	gets(gio);
 	if(strlen(gio) == 0) return;
-	if(KiemTraSo(gio) == 0 || atoi(gio) > 24 || atoi(gio) <0){
+	if(KiemTraSo(gio) == 0 || atoi(gio) > 23 || atoi(gio) <0){
 		cout << "ERROR: NHAP SAI!!! MOI NHAP LAI" << endl;
 		goto gio;
 	}
@@ -1295,7 +1301,7 @@ void DatVe(DS_CHUYENBAY &listCB,DS_HANHKHACH *&listHK,CHUYENBAY *cb,HANHKHACH ha
 	char tam,soDay_tam[100]={},soDong_tam[100]={};
 
 	for (int i=0; i<strlen(soVe); i++){
-		if ( int(int(soVe[i]) >=ASCII_0 and int(soVe[i]) <= ASCII_9) {
+		if ( int(int(soVe[i]) >=ASCII_0 and int(soVe[i]) <= ASCII_9) ){
 			tam = soVe[i];  
 			strcat(soDong_tam,&tam);
 			continue;
