@@ -590,40 +590,45 @@ void ChuyenDoi(DS_HANHKHACH  *listHK,HANHKHACH hk[],int &i){
 	
 //save hanh khach tat ca chuyen bay
 //*****
-void SaveHK(DS_HANHKHACH *dshk){
-	ofstream savefile;
-	savefile.open("HANHKHACH.txt", ios::out );
-	DS_HANHKHACH *temp;
-	while(dshk){
-		if (dshk->left==NULL){
-					cout << dshk->hanhkhach.cmnd << endl;
-					savefile << dshk->hanhkhach.cmnd << endl;
-					savefile << dshk->hanhkhach.ho << endl;
-					savefile << dshk->hanhkhach.ten << endl;
-					savefile << dshk->hanhkhach.phai << endl;
-					dshk = dshk->right;
-		} else {
-			temp = dshk->left;
-			while(temp->right && temp->right != dshk){
-				temp = temp->right;
-			}
-			if(temp->right == NULL){
-				    temp->right = dshk;
-				    cout << dshk->hanhkhach.cmnd << endl;
-					savefile << dshk->hanhkhach.cmnd << endl;
-					savefile << dshk->hanhkhach.ho << endl;
-					savefile << dshk->hanhkhach.ten << endl;
-					savefile << dshk->hanhkhach.phai << endl ;
-			     	dshk = dshk->left;
-			}
-			else{
-				temp->right = NULL;
-				dshk = dshk->right;
-			}
-		}
+void SaveHK(DS_HANHKHACH *dshk, ofstream &savefile){
+	// DS_HANHKHACH *temp;
+	// while(dshk){
+	// 	if (dshk->left==NULL){
+	// 				cout << dshk->hanhkhach.cmnd << endl;
+	// 				savefile << dshk->hanhkhach.cmnd << endl;
+	// 				savefile << dshk->hanhkhach.ho << endl;
+	// 				savefile << dshk->hanhkhach.ten << endl;
+	// 				savefile << dshk->hanhkhach.phai << endl;
+	// 				dshk = dshk->right;
+	// 	} else {
+	// 		temp = dshk->left;
+	// 		while(temp->right && temp->right != dshk){
+	// 			temp = temp->right;
+	// 		}
+	// 		if(temp->right == NULL){
+	// 			    temp->right = dshk;
+	// 			    cout << dshk->hanhkhach.cmnd << endl;
+	// 				savefile << dshk->hanhkhach.cmnd << endl;
+	// 				savefile << dshk->hanhkhach.ho << endl;
+	// 				savefile << dshk->hanhkhach.ten << endl;
+	// 				savefile << dshk->hanhkhach.phai << endl ;
+	// 		     	dshk = dshk->left;
+	// 		}
+	// 		else{
+	// 			temp->right = NULL;
+	// 			dshk = dshk->right;
+	// 		}
+	// 	}
+	// }
+	if (dshk!=NULL) {
+		savefile << dshk->hanhkhach.cmnd << endl;
+		savefile << dshk->hanhkhach.ho << endl;
+		savefile << dshk->hanhkhach.ten << endl;
+		savefile << dshk->hanhkhach.phai << endl;
+		SaveHK(dshk->left, savefile);
+		SaveHK(dshk->right, savefile);
 	}
-	 savefile.close();
-	 PreOrder(dshk);
+	//  PreOrder(dshk);
 }
 
 //save ticket
@@ -1285,7 +1290,7 @@ void MenuDanhSachChuyenBay(DS_CHUYENBAY &l,DS_HANHKHACH *listHK, DS_MAYBAY &mayb
 int NhapThongTinHK(HANHKHACH &hanhkhach){
 	system("cls");	
 	char ho[50],ten[50],phai[50];
-	HinhVuong(30,10,75,25);
+	HinhVuong(30,10,85,25);
 	gotoxy(25,26);
 	cout << "_ Ho, Ten, Phai khong duoc chua khoang trang hay bo trong. ";
 	gotoxy(25,27);
@@ -1401,7 +1406,10 @@ void DatVe(DS_CHUYENBAY &listCB,DS_HANHKHACH *&listHK, DS_MAYBAY &listMB,CHUYENB
 	ThemVe(cb,hanhkhach.cmnd,soDong,soDay);
 	// them ve vao trong listHK
 	SaveCB(listCB,listHK,listMB);
-	SaveHK(listHK);
+	ofstream savefile;
+	savefile.open("HANHKHACH.txt", ios::out);
+	SaveHK(listHK, savefile);
+	savefile.close();
 	system("cls");
 	std::cout << "=> DAT VE THANH CONG! CHUONG TRINH SE TU DONG QUAY VE MENU CHINH." << std::endl;
 	Sleep(3000);
@@ -1570,7 +1578,7 @@ x:	cout << "Nhap (THOAT) de tro ve" << endl;
 	gets(maCB);
 	InHoa(maCB);
 	if(strcmp(maCB,"THOAT") == 0) return;
-	switch (KiemTraMaCB(listCB,maCB)==0 ? 1 : 0 | ChuyenBayCoTheXoaSua(listCB, maCB)==0 ? 2 : 0)
+	switch (KiemTraMaCB(listCB,maCB)==0 ? 1 : 0 | ChuyenBayDatVe(listCB, maCB)==0 ? 2 : 0)
 			{
 			case 1:  
 					std::cout << ">>> Chuyen bay khong ton tai!!! Moi nhap lai: " << std::endl;
@@ -1682,7 +1690,10 @@ x:	system("cls");
 	}
 	
 	SaveCB(listCB,listHK,listMB);
-	SaveHK(listHK);
+	ofstream savefile;
+	savefile.open("HANHKHACH.txt", ios::out);
+	SaveHK(listHK, savefile);
+	savefile.close();
 	system("cls");
 	cout << "Da Huy Ve!!!" ;
 	Sleep(1500);
@@ -1692,6 +1703,7 @@ void InDanhSachHanhKhach(DS_CHUYENBAY &listCB,DS_HANHKHACH *&listHK){
 	int stt=0;
 	char maCB[15];
 x:	system("cls");
+	XuatChuyenBay(listCB);
 	cout << "Nhap Ma Chuyen Bay: ";
 	fflush(stdin);
 	gets(maCB);
