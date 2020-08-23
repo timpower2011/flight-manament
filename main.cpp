@@ -3,14 +3,27 @@
 #include <Windows.h>
 #include <string.h>
 #include <graphics.h>
+#include <time.h>
 #include <math.h>
 #include <iomanip>
 #include <string>
 #include <fstream>
 using namespace std;
-#define  MAX 300
+#define  MAX_MAYBAY 300
 #define MAXHK 1000;
 
+#define ASCII_SPACE 32
+#define ASCII_0 48
+#define ASCII_9 57
+#define ASCII_A 65
+#define ASCII_Z 90
+
+
+#define STATUS_CB_CONVE 1
+#define STATUS_CB_HETVE 2
+#define STATUS_CB_HOANTAT 3
+
+int KiemTraCoPhaiLaQuaKhu(int ngay, int thang, int nam, int gio, int phut);
 // thuoc tinh cua mot cai may bay
 typedef struct {
 	char sohieuMB[15];
@@ -39,7 +52,7 @@ typedef struct {
 //danh sach may bay
 typedef struct{
 	int soluong = 0;
-	MAYBAY *DSMayBay[MAX];
+	MAYBAY *DSMayBay[MAX_MAYBAY];
 } DS_MAYBAY;
 //cay nhi phan tim kiem
  struct NODE {
@@ -58,21 +71,19 @@ struct chuyenbay{
 	char sohieuMB[15];
 	int soLuongVe=0;
 	TICKET *ve[1000];
-	
+	//con tro
 	chuyenbay *next = NULL;
 };
 // gan chuyenbay=CHUYENBAY
 typedef struct chuyenbay CHUYENBAY;
 typedef struct{
 	int soluong=0;
-	CHUYENBAY *pFirst =NULL,*pLast=NULL;
+	CHUYENBAY *pFirst = NULL,*pLast = NULL;
 }   DS_CHUYENBAY;
 //khai bao bien toan cuc
-	DS_MAYBAY listMB;
-	DS_CHUYENBAY listCB;
-	DS_HANHKHACH *listHK = NULL;
-/////////////////////////////////////////
-/////////////////////////////////////////	
+
+
+	
 	
 void Insert_BST(DS_HANHKHACH *&root,HANHKHACH &hanhkhach){
 	if ( root == NULL){	
@@ -80,7 +91,7 @@ void Insert_BST(DS_HANHKHACH *&root,HANHKHACH &hanhkhach){
 		root->hanhkhach = hanhkhach;
 		return;
 	}
-	// hanh khach > root
+	
 	if ( strcmp(root->hanhkhach.cmnd , hanhkhach.cmnd) <0){
 		Insert_BST(root->right, hanhkhach);
 	} else
@@ -93,6 +104,10 @@ void InHanhKhach(HANHKHACH &hanhkhach){
 	cout << hanhkhach.ho << endl;
 	cout << hanhkhach.ten << endl;
 	cout << hanhkhach.phai << endl;
+}
+void InThongTinHanhKhach(HANHKHACH &hanhkhach){
+	cout <<  "	CMND" << setw(10) << "	HOTEN" << setw(10) << "	PHAI" << endl;
+	cout << "	" << hanhkhach.cmnd << setw(10) << hanhkhach.ho <<" "<< hanhkhach.ten << setw(10) << hanhkhach.phai << endl << endl;
 }
 void PreOrder(DS_HANHKHACH *root){
 	if (root!=NULL) {
@@ -114,6 +129,17 @@ void Search_BTS(DS_HANHKHACH *&root,HANHKHACH &hanhkhach,char cmnd[]){
         return Search_BTS( root->right,hanhkhach, cmnd );
     }
 }
+int HanhKhachCoTonTai(DS_HANHKHACH *&root,char cmnd[]){
+	if ( root == NULL )
+        return 0;
+    if(strcmp(root->hanhkhach.cmnd, cmnd) == 0){
+        return 1;
+    }else if ( strcmp(root->hanhkhach.cmnd , cmnd ) >0 ){
+        return HanhKhachCoTonTai( root->left, cmnd );
+    }else if( strcmp(root->hanhkhach.cmnd , cmnd) <0){
+        return HanhKhachCoTonTai( root->right, cmnd );
+    }
+}
 
 DS_HANHKHACH* minValueNode(DS_HANHKHACH* node) 
 { 
@@ -128,9 +154,9 @@ DS_HANHKHACH* minValueNode(DS_HANHKHACH* node)
 DS_HANHKHACH* XoaHanhKhach(DS_HANHKHACH *root, char cmnd[]) 
 { 
     if (root == NULL) return root; 
-    if (strcmp(cmnd ,root->hanhkhach.cmnd) < 0) 
+    if (strcmp(cmnd , root->hanhkhach.cmnd) < 0) 
         root->left = XoaHanhKhach(root->left, cmnd); 
-    else if ( strcmp(cmnd , root->hanhkhach.cmnd) >0) 
+    else if ( strcmp(cmnd , root->hanhkhach.cmnd) > 0) 
         root->right = XoaHanhKhach(root->right, cmnd); 
     else
     { 
@@ -146,11 +172,8 @@ DS_HANHKHACH* XoaHanhKhach(DS_HANHKHACH *root, char cmnd[])
             free(root);
             return temp; 
         } 
-  
         DS_HANHKHACH *temp = minValueNode(root->right); 
-  
         strcpy(root->hanhkhach.cmnd, temp->hanhkhach.cmnd); 
-  
         root->right = XoaHanhKhach(root->right, temp->hanhkhach.cmnd); 
     } 
     return root; 
@@ -173,7 +196,7 @@ void gotoxy(int x, int y)
     COORD c = { x, y };  
     SetConsoleCursorPosition(h,c);
 }
-// doi mau
+// H�m t� m�u.
 void textcolor(int x)
 {
 	HANDLE mau;
@@ -247,8 +270,8 @@ static void XuatDanhSach(DS_MAYBAY &l){
 	cout << "SO DAY\t\t" ;
 	cout << "SO DONG\t\t\n" ;
 	
-	
 	for (int i=1; i<= l.soluong; i++){
+
 		cout   <<   "\t\t\t  " << l.DSMayBay[i]->sohieuMB << "\t\t";
 		cout  << l.DSMayBay[i]->loai<< "\t\t";
 		cout << "  " <<l.DSMayBay[i]->soday<<"\t\t" ;
@@ -256,10 +279,13 @@ static void XuatDanhSach(DS_MAYBAY &l){
 	}
 	cout << "==============================================================================================" << endl;
 	
+	
+	
 }
 int KiemTraKhoangTrang(char ch[]){
 	for (int i=0; i< strlen(ch); i++){
-		if((int) ch[i] == 32) return 0;
+		// mascii " "=32
+		if( (int) ch[i] == ASCII_SPACE) return 0;
 	}
 	return 1;
 }
@@ -272,7 +298,7 @@ void InHoa(char ch[]){
 int KiemTraSo(string so){
 	//so.c_str(): doi ve kieu char
 	for (int i=0; i< strlen(so.c_str()); i++){
-		if (so[i] < 48 or so[i]>57) return 0;
+		if (so[i] < ASCII_0 or so[i] > ASCII_9) return 0;
 	}
 	return 1;
 }
@@ -288,7 +314,6 @@ int KiemTraMBDaCoCB(DS_CHUYENBAY listCB, char maCB[]){
 		for(CHUYENBAY *i = listCB.pFirst; i!=NULL; i=i->next){
 				if(strcmp(i->sohieuMB, maCB) == 0){
 					return 0;
-					;
 				}
 		}
 		return 1;
@@ -304,9 +329,12 @@ int confirm(){
 }
 // ky tu 65-90 
 int KiemTraKiTu(char text[]){
+	
 	for(int i=0; i<strlen(text); i++){
-		if( ((int)text[i] <65 || (int)text[i] >90) ) {
-			if (((int)text[i]>47 && (int)text[i] < 58)) continue;
+		// neu khong la chu
+		if( ((int)text[i] <ASCII_A || (int)text[i] >ASCII_Z) ) {
+			// neu la so 48-57
+			if (((int)text[i] >= ASCII_0 && (int)text[i] <= ASCII_9)) continue;		
 			return 0; 
 		}
 	}
@@ -317,7 +345,7 @@ void NhapThongTinMayBay(DS_MAYBAY &l){
 		char sohieuMB[15], loai[40];
 		string sodong_tam,soday_tam;
 		int sodong,soday;
-		
+	
 		system("cls");
 		cout << "				========NHAP THONG TIN MAY BAY========" << endl;
 		//nhap so hieu
@@ -338,7 +366,8 @@ void NhapThongTinMayBay(DS_MAYBAY &l){
 		if(KiemTraSoHieuMB(l,sohieuMB) == 1) {
 			cout << "ERROR: SO HIEU DA CO!!! MOI NHAP LAI" << endl;
 			goto sohieuMB;
-		};		
+		};	
+			
 		loai:
 		fflush(stdin);
 		cout << "Loai: " ;
@@ -352,8 +381,8 @@ void NhapThongTinMayBay(DS_MAYBAY &l){
 		day:
 		cout << "So day: "; 
 		fflush(stdin);
-		getline(cin,soday_tam);
-		if (strlen(soday_tam.c_str()) == 0) return;
+		getline(cin,soday_tam); 
+		if (strlen( soday_tam.c_str() ) == 0) return;
 		if ( KiemTraSo(soday_tam) == 0) {
 			system("cls");
 			cout << "ERROR: NHAP SAI!!! MOI NHAP LAI" << endl;;
@@ -406,9 +435,8 @@ void ChinhSuaMayBay(DS_MAYBAY &l,char sohieuMB[]){
 			goto sohieuMB;
 		}
 		//kiem tra trung	
-		if(KiemTraSoHieuMB(l,temp_sohieuMB) == 1) {
+		if((KiemTraSoHieuMB(l,temp_sohieuMB) == 1) && (strcmp(l.DSMayBay[vitri]->sohieuMB,temp_sohieuMB)!=0))  {
 			cout << "ERROR: SO HIEU DA CO!!! MOI NHAP LAI";
-		//	ChinhSuaMayBay(l,sohieuMB);	
 			goto sohieuMB;
 		};		
 		loai:
@@ -419,8 +447,6 @@ void ChinhSuaMayBay(DS_MAYBAY &l,char sohieuMB[]){
 		if (strlen(loai) == 0) return;
 		if( KiemTraKiTu(loai) == 0) {
 			cout << "ERROR: NHAP SAI!!! MOI NHAP LAI";
-			Sleep(1000);
-			cout << "Loai: ";
 			goto loai;
 		};	
 		soday:
@@ -446,21 +472,22 @@ void ChinhSuaMayBay(DS_MAYBAY &l,char sohieuMB[]){
 		l.DSMayBay[vitri]->sodong = atoi(sodong_tam.c_str());	
 }
 // menue danh sach may bay
-void MenuDanhSachMayBay(DS_MAYBAY &l){
+void MenuDanhSachMayBay(DS_MAYBAY &l,DS_CHUYENBAY &listCB){
 	int luachon=0;
 	char chon[5];
 	
 	system("cls");
 	cout << "\t\t\t ================= DANH SACH MAY BAY =================" << endl;
+	// ham xuat list mb
 	XuatDanhSach(l);
 	// in ra
 	cout << "THEM (T)		XOA(X)			SUA(S)			LUU(L)" << endl;
 	// nhap lua chon
-	cout << "Luachon: "; cin >> chon;
+	cout << "Luachon: "; 
+	cin >> chon;
 	InHoa(chon);
 	
 	// chuyen lua chon sang so de su dung switch...case
-
 	if ( strcmp(chon,"T")==0 ) luachon =1;
 	if ( strcmp(chon,"X")==0 ) luachon=2;
 	if ( strcmp(chon,"S")==0 ) luachon=3;
@@ -472,9 +499,9 @@ void MenuDanhSachMayBay(DS_MAYBAY &l){
 	// switch...case
 	switch(luachon){
 		case 1:{
-		NhapThongTinMayBay(l);
-		break;
-	}
+			NhapThongTinMayBay(l);
+			break;
+		}
 		case 2:{
 			char masoMB[15];
 			system("cls");
@@ -485,18 +512,18 @@ void MenuDanhSachMayBay(DS_MAYBAY &l){
 			cout << "Nhap Ma So May Bay (Can Xoa): ";
 			gets(masoMB);
 			InHoa(masoMB);
-			
-			if ( KiemTraSoHieuMB(l,masoMB)==0 ){
+			if(strlen(masoMB) == 0) break;
+			if ( KiemTraSoHieuMB(l,masoMB) == 0 ){
 				cout << "ERROR: Ma So Khong Ton Tai!!!!!!" << endl;
 				goto masoMB_c2;
 			}
 			if (KiemTraMBDaCoCB(listCB,masoMB) == 0){
-				cout << "ERROR: May Bay Da Co Chuyen Bay! Sua that bai!!" << endl;
+				cout << "ERROR: May Bay Da Co Chuyen Bay! Xoa that bai!!" << endl;
 				Sleep(1000);
 				break;
 			} 
 			if (confirm() == 0) break;
-			XoaMayBay(l,masoMB);;
+			XoaMayBay(l,masoMB);
 			system("cls");
 			cout << "DA XOA!!!!";
 			Sleep(1000);
@@ -511,6 +538,7 @@ void MenuDanhSachMayBay(DS_MAYBAY &l){
 			cout << "Nhap So Hieu May Bay (Can Sua): ";
 			gets(masoMB); 
 			InHoa(masoMB);
+			if(strlen(masoMB) == 0) break;
 			if (KiemTraSoHieuMB(l,masoMB) == 0 ){
 				cout << "ERROR: Ma So Khong Ton Tai!!!!!!" << endl;
 				goto masoMB_c3;
@@ -521,9 +549,9 @@ void MenuDanhSachMayBay(DS_MAYBAY &l){
 			} else ChinhSuaMayBay(l,masoMB);
 			break;
 		}
-		default: MenuDanhSachMayBay(l);
+		default: MenuDanhSachMayBay(l,listCB);
 }
-	MenuDanhSachMayBay(l);
+	MenuDanhSachMayBay(l,listCB);
 }
 
 void LoadMB(DS_MAYBAY &l){
@@ -561,13 +589,14 @@ void ChuyenDoi(DS_HANHKHACH  *listHK,HANHKHACH hk[],int &i){
 }
 	
 //save hanh khach tat ca chuyen bay
-
+//*****
 void SaveHK(DS_HANHKHACH *dshk){
 	ofstream savefile;
 	savefile.open("HANHKHACH.txt", ios::out );
 	DS_HANHKHACH *temp;
 	while(dshk){
 		if (dshk->left==NULL){
+					cout << dshk->hanhkhach.cmnd << endl;
 					savefile << dshk->hanhkhach.cmnd << endl;
 					savefile << dshk->hanhkhach.ho << endl;
 					savefile << dshk->hanhkhach.ten << endl;
@@ -579,12 +608,13 @@ void SaveHK(DS_HANHKHACH *dshk){
 				temp = temp->right;
 			}
 			if(temp->right == NULL){
-				temp->right == dshk;
+				    temp->right = dshk;
+				    cout << dshk->hanhkhach.cmnd << endl;
 					savefile << dshk->hanhkhach.cmnd << endl;
 					savefile << dshk->hanhkhach.ho << endl;
 					savefile << dshk->hanhkhach.ten << endl;
 					savefile << dshk->hanhkhach.phai << endl ;
-				dshk = dshk->left;
+			     	dshk = dshk->left;
 			}
 			else{
 				temp->right = NULL;
@@ -592,7 +622,8 @@ void SaveHK(DS_HANHKHACH *dshk){
 			}
 		}
 	}
-	 savefile.close();	
+	 savefile.close();
+	 PreOrder(dshk);
 }
 
 //save ticket
@@ -613,17 +644,31 @@ void SaveTK(CHUYENBAY *cb){
 }
 
 
-void SaveCB(DS_CHUYENBAY &l,DS_HANHKHACH *listHK){
+void SaveCB(DS_CHUYENBAY &l,DS_HANHKHACH *listHK, DS_MAYBAY &listMB){
 
 	ofstream savefile;
 	savefile.open("ChuyenBay.txt", ios::out);
 	savefile << l.soluong << endl; 
 	for(CHUYENBAY *k=l.pFirst; k!=NULL; k=k->next){
+		int gioiHanSoVe;
+		MAYBAY *tempMB = new MAYBAY;
+		for (int i=1; i<= listMB.soluong; i++){
+				if ( strcmp(listMB.DSMayBay[i]->sohieuMB,k->sohieuMB) == 0) {
+					gioiHanSoVe = listMB.DSMayBay[i]->soday*listMB.DSMayBay[i]->sodong;
+					break;
+				}
+		}
 		savefile << k->machuyenbay << endl;
 		savefile << k->date.ngay << endl << k->date.thang << endl << k->date.nam << endl;
 		savefile << k->time.gio << endl << k->time.phut << endl;
 		savefile << k->sanbayden << endl;
 		savefile << k->sohieuMB << endl;
+		if (k->soLuongVe>=gioiHanSoVe) {
+			k->trangthai=2;
+		}
+		if (KiemTraCoPhaiLaQuaKhu(k->date.ngay, k->date.thang, k->date.nam, k->time.gio, k->time.phut) && k->trangthai!=0) {
+			k->trangthai=3;
+		}
 		savefile << k->trangthai << endl;
 		savefile << k->soLuongVe << endl;
 		SaveTK(k);
@@ -632,21 +677,60 @@ void SaveCB(DS_CHUYENBAY &l,DS_HANHKHACH *listHK){
 	savefile.close();
 }
 
-int KiemTraNamNhuan(int year){
-	if (year %100==0 && year % 400 == 0){
+int KiemTraCoPhaiLaQuaKhu(int ngay, int thang, int nam, int gio, int phut) {
+	time_t now;
+	time(&now);
+	struct tm thoiGianCanCheck;
+	thoiGianCanCheck.tm_year=nam-1900;
+	thoiGianCanCheck.tm_mon=thang-1;
+	thoiGianCanCheck.tm_mday=ngay;
+	thoiGianCanCheck.tm_hour=gio;
+	thoiGianCanCheck.tm_min=phut;
+	thoiGianCanCheck.tm_sec=0;
+	time_t thoiGianCanCheck_time = mktime(&thoiGianCanCheck);
+	if (thoiGianCanCheck_time<now) {
 		return 1;
-	} else if ( year % 4 == 0) return 1;
-	
+	}
 	return 0;
 }
 
+int KiemTraNamNhuan(int year){
+//	chia het cho 4  
+// AND khong chia het cho 100. 
+// OR chia het cho 400.
+		if (((year % 4 == 0) && (year % 100 != 0)) || (year % 400 == 0)) {
+				return 1;
+		}
+		return 0;
+}
+
 int KiemTraDate(int ngay,int thang, int nam,int gio, int phut){
-	if ( ngay >31 || ngay <0) return 0;
-	if  (thang > 12 || thang <0) return 0;
-	if (nam < 2020) return 0;
-	if ( ngay==29 && thang==2 && KiemTraNamNhuan(nam)==0 ) return 0;
-	if ( gio > 24 || gio<0) return 0;
+	// if ( ngay >31 || ngay <0) return 0;
+	// if  (thang > 12 || thang <0) return 0;
+	// if (nam < 2020) return 0;
+	// if ( ngay==29 && thang==2 && KiemTraNamNhuan(nam)==0 ) return 0;
+	if (gio > 23 || gio<0) return 0;
 	if (phut > 60 || phut <0) return 0;
+	if (thang < 1 || thang > 12) 
+    return 0; 
+    if (ngay < 1 || ngay > 31) 
+    return 0; 
+  
+    // Kiem tra ngay thang 2  
+    if (thang == 2) 
+    { 
+        if (KiemTraNamNhuan(nam)) 
+        return (ngay <= 29); 
+        else
+        return (ngay <= 28); 
+    } 
+  
+    // thang 4,6,9,11 chi co 30 ngay
+    if (thang == 4 || thang == 6 || 
+        thang == 9 || thang == 11) {
+         if (ngay>30) return 0;
+				}
+
 	return 1;
 }
 void ThemNodeChuyenBay(DS_CHUYENBAY &l,CHUYENBAY *tempCB){
@@ -672,7 +756,7 @@ void ThemNodeChuyenBay(DS_CHUYENBAY &l,CHUYENBAY *tempCB){
 				}
 }
 int SoSanhDate(Date d1, Date d2){
-	if (d1.ngay != d2.ngay && d1.thang != d2.thang &&d1.nam != d2.nam ) return 0;
+	if (d1.ngay != d2.ngay || d1.thang != d2.thang || d1.nam != d2.nam ) return 0;
 	return 1;
 }
 int KiemTraMaCBTrongChuyenBay(DS_CHUYENBAY &listCB,CHUYENBAY *chuyenbay){
@@ -689,6 +773,30 @@ int KiemTraTrungMaCB(DS_CHUYENBAY &listCB,char *machuyenbay){
 				if (strcmp(i->machuyenbay,machuyenbay) == 0) {
 					return 1;
 				}
+		}
+		return 0;
+}
+int ChuyenBayCoTheXoaSua(DS_CHUYENBAY &listCB,char *machuyenbay){
+		for (CHUYENBAY *i = listCB.pFirst; i!=NULL; i=i->next){
+				if (strcmp(i->machuyenbay,machuyenbay) == 0 && i->soLuongVe == 0 && i->trangthai!=3) {
+					return 1;
+				} 
+		}
+		return 0;
+}
+int ChuyenBayDatVe(DS_CHUYENBAY &listCB,char *machuyenbay){
+		for (CHUYENBAY *i = listCB.pFirst; i!=NULL; i=i->next){
+				if (strcmp(i->machuyenbay,machuyenbay) == 0 && i->trangthai != 2 && i->trangthai!=3) {
+					return 1;
+				} 
+		}
+		return 0;
+}
+int ChuyenBayDaHoanTat(DS_CHUYENBAY &listCB,char *machuyenbay){
+		for (CHUYENBAY *i = listCB.pFirst; i!=NULL; i=i->next){
+				if (strcmp(i->machuyenbay,machuyenbay) == 0 && i->trangthai != 2 && i->trangthai!=3) {
+					return 1;
+				} 
 		}
 		return 0;
 }
@@ -720,7 +828,6 @@ void ThemChuyenBay(DS_CHUYENBAY &l,DS_MAYBAY &maybay){
 	}
 	strcpy(tempCB->machuyenbay,maCB);
 	/////////////
-	
 	char ngay[10],thang[10],nam[10],gio[10],phut[10];
 	time:
 	cout << "Nhap Ngay Gio Khoi Hanh" << endl;
@@ -747,7 +854,7 @@ void ThemChuyenBay(DS_CHUYENBAY &l,DS_MAYBAY &maybay){
 	fflush(stdin); 
 	gets(nam);
 	if(strlen(nam) == 0 ) return;
-	if( KiemTraSo(nam) == 0 || (atoi(ngay)==29 &&  atoi(thang)==2 && KiemTraNamNhuan(atoi(nam))==0 || atoi(nam) < 2020)){
+	if( KiemTraSo(nam) == 0 || (atoi(ngay)==29 &&  atoi(thang)==2 && KiemTraNamNhuan(atoi(nam))==0)){
 		cout << "ERROR: NHAP SAI!!! MOI NHAP LAI" << endl;
 		goto nam;
 	}
@@ -756,7 +863,7 @@ void ThemChuyenBay(DS_CHUYENBAY &l,DS_MAYBAY &maybay){
 	fflush(stdin);  
 	gets(gio);
 	if(strlen(gio) == 0) return;
-	if(KiemTraSo(gio) == 0 || atoi(gio) > 24 || atoi(gio) <0){
+	if(KiemTraSo(gio) == 0 || atoi(gio) > 23 || atoi(gio) <0){
 		cout << "ERROR: NHAP SAI!!! MOI NHAP LAI" << endl;
 		goto gio;
 	}
@@ -769,7 +876,13 @@ void ThemChuyenBay(DS_CHUYENBAY &l,DS_MAYBAY &maybay){
 		cout << "ERROR: NHAP SAI!!! MOI NHAP LAI" << endl;
 		goto phut;
 	}
-	
+	if (KiemTraDate(atoi(ngay), atoi(thang), atoi(nam) ,atoi(gio), atoi(phut))==0) {
+		goto time;
+	}
+	if (KiemTraCoPhaiLaQuaKhu(atoi(ngay), atoi(thang), atoi(nam) ,atoi(gio), atoi(phut))) {
+		cout << "ERROR: KHONG THE TAO CHUYEN BAY TRONG QUA KHU!!!" << endl;
+		goto time;
+	}
 	tempCB->date.ngay = atoi(ngay);
 	tempCB->date.thang = atoi(thang);
 	tempCB->date.nam = atoi(nam);
@@ -788,17 +901,7 @@ void ThemChuyenBay(DS_CHUYENBAY &l,DS_MAYBAY &maybay){
 	}
 	strcpy(tempCB->sanbayden,sanbayden);
 	
-	char trangthai[10];
-	trangthai:
-	cout << "Nhap Trang Thai Chuyen Bay (1:con ve/2: het ve/3: hoan tat): ";
-	fflush(stdin);
-	gets(trangthai);
-	if(strlen(trangthai) == 0) return;
-	 if( atoi(trangthai) >3 || atoi(trangthai) <1){
-		cout << "ERROR: Nhap Sai!!! Moi nhap lai" << endl << endl;
-		goto trangthai;
-	}
-	tempCB->trangthai = atoi(trangthai);
+	tempCB->trangthai = STATUS_CB_CONVE;
 	sohieuMB:
 	fflush(stdin);
 	cout << "Nhap so hieu MB: ";
@@ -1005,13 +1108,12 @@ void ChinhSuaChuyenBay(DS_CHUYENBAY &listCB, char *machuyenbay){
 	}
 	
 }
-
+// 0: khong ton tai cb
 int KiemTraMaCB(DS_CHUYENBAY &l,char maCB[]){
 	
 	for (CHUYENBAY *k=l.pFirst; k!=NULL; k=k->next){
-		if ( strcmp(k->machuyenbay,maCB)==0 ) return 1;
+		if ( strcmp(k->machuyenbay,maCB) == 0 ) return 1;
 	}
-	
 	return 0;
 }
 
@@ -1032,7 +1134,7 @@ void LoadTK(CHUYENBAY *&cb){
 	strcat(fileName,".txt");
 	
 	readfile.open(fileName,ios::in);
-	for (int i=1; i<=cb->soLuongVe; i++){
+	for (int i=1; i<= cb->soLuongVe; i++){
 		cb->ve[i] = new TICKET;
 		readfile >> cb->ve[i]->cmnd;
 		readfile >> cb->ve[i]->soDay;
@@ -1042,11 +1144,15 @@ void LoadTK(CHUYENBAY *&cb){
 }
 void LoadCB(DS_CHUYENBAY &l){
 	ifstream readfile;
-	
 	readfile.open("ChuyenBay.txt", ios::in);
 	readfile >> l.soluong;
 	for (int i=1; i<=l.soluong; i++){
 		CHUYENBAY *tempCB = new CHUYENBAY;
+		// struct tm thoiGianCB;
+	  // thoiGianCB.tm_year = tempCB->date.nam - 1900;
+		// now = mktime(&thoiGianCB);
+		// cout << ctime(&now);
+
 		readfile >> tempCB->machuyenbay;
 		readfile >>  tempCB->date.ngay;
 		readfile >>  tempCB->date.thang; 
@@ -1057,6 +1163,9 @@ void LoadCB(DS_CHUYENBAY &l){
 		readfile >>  tempCB->sohieuMB;
 		readfile >>  tempCB->trangthai;
 		readfile >> tempCB->soLuongVe;
+		if (KiemTraCoPhaiLaQuaKhu(tempCB->date.ngay, tempCB->date.thang, tempCB->date.nam, tempCB->time.gio, tempCB->time.phut) && tempCB->trangthai!=0) {
+			tempCB->trangthai=3;
+		}
 		LoadTK(tempCB);
 		ThemNodeChuyenBay(l,tempCB);
 	}
@@ -1070,7 +1179,7 @@ void LoadHK(DS_HANHKHACH *&listHK){
 		if(readfile.fail()) return;
 		if ( readfile.peek() == std::ifstream::traits_type::eof() ) return;
 
-		while(true)
+		while(1)
 		{
 			if(readfile.eof()) break;
 			readfile >> hk.cmnd;
@@ -1092,12 +1201,13 @@ void MenuDanhSachChuyenBay(DS_CHUYENBAY &l,DS_HANHKHACH *listHK, DS_MAYBAY &mayb
 	fflush(stdin);
 	gets(chon);
 	InHoa(chon);
-	
+	if (strlen(chon)==0) return;
+
 	if (strcmp(chon,"T") == 0) luachon = 1;
 	else if (strcmp(chon,"X") == 0) luachon = 2;
 	else if (strcmp(chon,"S") == 0) luachon = 3;
 	else if (strcmp(chon,"L") == 0) {
-		SaveCB(l,listHK);
+		SaveCB(l,listHK, maybay);
 		return;
 	} else goto y;
 	
@@ -1108,28 +1218,60 @@ void MenuDanhSachChuyenBay(DS_CHUYENBAY &l,DS_HANHKHACH *listHK, DS_MAYBAY &mayb
 		}
 		case 2:{
 			char maCB[15];
-		t:  XuatChuyenBay(l);
+		  XuatChuyenBay(l);
 			cout << "Nhap (Thoat) de tro lai. " << endl;
-			cout << "Nhap ma chuyen bay can xoa: "; 
+			t:  cout << "Nhap ma chuyen bay can xoa: "; 
 			fflush(stdin);
 			gets(maCB);
 			InHoa(maCB);	
 			if(strcmp(maCB,"THOAT")==0) break;	
-			if (!KiemTraMaCB(l,maCB) ) goto t;
+			switch (KiemTraMaCB(l,maCB)==0 ? 1 : 0 | ChuyenBayCoTheXoaSua(l, maCB)==0 ? 2 : 0)
+			{
+			case 1:  
+					std::cout << ">>> Chuyen bay khong ton tai!!! Moi nhap lai: " << std::endl;
+					Sleep(500);
+					goto t;
+					break; // skipped
+			case 2: // Match!
+					std::cout << ">>> Khong the XOA, do chuyen bay da co khach DAT VE hoac DA HOAN TAT !!!" << std::endl;
+					Sleep(500);
+					goto t;
+			}
 			XoaChuyenBay(l,maCB);
 			break;
 		}
 		case 3:{
 			char maCB[15];
-			x:  XuatChuyenBay(l);
+			XuatChuyenBay(l);
 			cout << "Nhap (Thoat) de tro lai. " << endl;
-			cout << "Nhap ma chuyen bay sua: "; 
+			x: cout << "Nhap ma chuyen bay can sua: "; 
 			fflush(stdin);
 			gets(maCB);
 			InHoa(maCB);	
 			if(strcmp(maCB,"THOAT")==0) break;
 			// kiem tra maCB co ton tai		
-			if (KiemTraMaCB(l,maCB) == 0) goto x;
+			// if (KiemTraMaCB(l,maCB)==0) {
+			// 	std::cout << ">>> Chuyen bay khong ton tai!!! Moi nhap lai: " << std::endl;
+			// 	Sleep(500);
+			// 	goto x	;
+			// }
+			// if (==0) {
+			// 	std::cout << ">>> Khong the chinh sua, do chuyen bay da co khach dat ve!!!" << std::endl;
+			// 	Sleep(500);
+			// 	goto x	;
+			// }
+			switch (KiemTraMaCB(l,maCB)==0 ? 1 : 0 | ChuyenBayDatVe(l, maCB)==0 ? 2 : 0)
+			{
+			case 1:  
+					std::cout << ">>> Chuyen bay khong ton tai!!! Moi nhap lai: " << std::endl;
+					Sleep(500);
+					goto x;
+					break; // skipped
+			case 2: // Match!
+					std::cout << ">>> Khong the chinh sua, do chuyen bay da co khach DAT VE hoac DA HOAN TAT !!!" << std::endl;
+					Sleep(500);
+					goto x;
+			}
 			ChinhSuaChuyenBay(l,maCB);
 			break;
 		}
@@ -1142,59 +1284,50 @@ void MenuDanhSachChuyenBay(DS_CHUYENBAY &l,DS_HANHKHACH *listHK, DS_MAYBAY &mayb
 //c
 int NhapThongTinHK(HANHKHACH &hanhkhach){
 	system("cls");	
-	char ho[50],ten[50],phai[50],cmnd[50];
+	char ho[50],ten[50],phai[50];
 	HinhVuong(30,10,75,25);
 	gotoxy(25,26);
 	cout << "_ Ho, Ten, Phai khong duoc chua khoang trang hay bo trong. ";
 	gotoxy(25,27);
 	cout << "_ CMND phai la so. " ;
 	gotoxy(42,13);
-	cout << "===NHAP THONG TIN===";
-x:	gotoxy(35,15);
+	cout << "===NHAP THONG TIN HANH KHACH MOI===";
+  gotoxy(35,15);
+	cout<<"CMND: " << hanhkhach.cmnd;
+x:	gotoxy(35,17);
 	cout <<"Ho: ";
 	fflush(stdin);
 	gets(ho);
 	InHoa(ho);
 	if(strlen(ho) == 0)	return 0;
 	
-	if(KiemTraKiTu(ho) == 0 || strlen(ho) == 0){
-		gotoxy(35,15);
+	if(KiemTraKiTu(ho) == 0){
+		gotoxy(35,17);
 		cout << "                        ";
 		goto x;
 	}
 	hanhkhach.ho = ho;
 	
-y:	gotoxy(35,17);
+y:	gotoxy(35,19);
 	cout <<"Ten: ";
 	fflush(stdin);
 	gets(ten);
 	InHoa(ten);
 	if(strlen(ten) == 0) return 0;
-	if(KiemTraKiTu(ten) == 0 ||strlen(ten) == 0 ){
-		gotoxy(35,17);
+	if(KiemTraKiTu(ten) == 0){
+		gotoxy(35,19);
 		cout << "                     ";
 		goto y;
 	}
 	hanhkhach.ten = ten;
 	
-k:	gotoxy(35,19);
-	cout<<"CMND: ";
-	fflush(stdin);
-	gets(cmnd);
-	if(strlen(cmnd) == 0) return 0;
-	if(KiemTraSo(cmnd) == 0 || strlen(cmnd) != 10){
-		gotoxy(35,19);
-		cout << "                     ";
-		goto k;
-	}
-	strcpy(hanhkhach.cmnd ,cmnd);
 	
 z:	gotoxy(35,21);
 	cout<<"Phai (NAM/NU): ";
 	gets(phai);
 	InHoa(phai);
 	if(strlen(phai) == 0) return 0;
-	if(KiemTraKhoangTrang(phai)==0 || strlen(phai) == 0 ){
+	if(KiemTraKhoangTrang(phai)==0  ){
 		gotoxy(35,21);
 		cout << "                     ";
 		goto z;
@@ -1206,9 +1339,9 @@ z:	gotoxy(35,21);
 		goto z;
 	}
 	hanhkhach.phai = phai;
-	gotoxy(25,24);
 	return 1;
 }
+
 void XuatChuyenBayTrongDSV(DS_CHUYENBAY &listCB){
 	int stt=0;
 	
@@ -1244,12 +1377,12 @@ void XuatChuyenBayTrongDSV(DS_CHUYENBAY &listCB){
 	cout << "===================================================================================================" << endl;
 }
 
-void DatVe(DS_CHUYENBAY &listCB,DS_HANHKHACH *&listHK,CHUYENBAY *cb,HANHKHACH &hanhkhach,char soVe[]){
+void DatVe(DS_CHUYENBAY &listCB,DS_HANHKHACH *&listHK, DS_MAYBAY &listMB,CHUYENBAY *cb,HANHKHACH hanhkhach,char soVe[]){
 	int soDay=0,soDong=0;
 	char tam,soDay_tam[100]={},soDong_tam[100]={};
-	
+
 	for (int i=0; i<strlen(soVe); i++){
-		if ( int(soVe[i]) >=48 and int(soVe[i]) <= 57) {
+		if ( int(int(soVe[i]) >=ASCII_0 and int(soVe[i]) <= ASCII_9) ){
 			tam = soVe[i];  
 			strcat(soDong_tam,&tam);
 			continue;
@@ -1263,17 +1396,21 @@ void DatVe(DS_CHUYENBAY &listCB,DS_HANHKHACH *&listHK,CHUYENBAY *cb,HANHKHACH &h
 	soDong = atoi(soDong_tam);
 	
 	//them ve vao trong chuyen bay
+	Insert_BST(listHK,hanhkhach);
+	// them ve vao chuyen bay
 	ThemVe(cb,hanhkhach.cmnd,soDong,soDay);
 	// them ve vao trong listHK
-	Insert_BST(listHK,hanhkhach);
-	SaveCB(listCB,listHK);
+	SaveCB(listCB,listHK,listMB);
 	SaveHK(listHK);
+	system("cls");
+	std::cout << "=> DAT VE THANH CONG! CHUONG TRINH SE TU DONG QUAY VE MENU CHINH." << std::endl;
+	Sleep(3000);
 }
-
-int KiemTraGheTrong(TICKET *arr[],int &n,int soday,int sodong){
+// ve da ton tai return 1;	
+int KiemTraGheTrong(TICKET *arr[],int &soLg,int soday,int sodong){
 	//n = solg ve
-	if (n==0) return 0;
-	for (int i=1; i<=n; i++){
+	if (soLg==0) return 0; 
+	for (int i=1; i<=soLg; i++){
 		if ( (arr[i]->soDong == sodong) and (arr[i]->soDay==soday)){
 			return 1;
 		}
@@ -1284,35 +1421,40 @@ int KiemTraVeDat(CHUYENBAY *tempCB,MAYBAY *tempMB,char soVe[],char cmnd[]){
 	//de tach phan doi ve thanh so dong, so day
 	int soDay=0,soDong=0;
 	char tam,soDay_tam[100]={},soDong_tam[100]={};
+	//A3
 	for (int i=0; i<strlen(soVe); i++){		
 		if ( int(soVe[i]) >=48 and int(soVe[i]) <= 57) {
 			tam = soVe[i];
+			//
 			strcat(soDong_tam,&tam);
 			continue;
 		}
-		//doi chu ra so day
-		tam = (char) ((int)soVe[i]-16);
+		//doi chu ra so day: 
+		tam = (char) ((int)soVe[i]-16); 
 		strcat(soDay_tam,&tam);
-	}
+	} 
 	//tim ra duoc vitri ghe ngoi khach dat
-
+	//soday = 1, sodong = 3
 	///////////////////////////////////////////////////////
 	//1: ghe khong tontai
 	//2: ghe da duoc dat
 	//3: hanh khach da co mat trong chuyen bay
 	//0: so ve hop le
 	soDay = atoi(soDay_tam);
-	soDong = atoi(soDong_tam);
+	soDong = atoi(soDong_tam); 
+	// kiem tra so day cho phep cua maybay
 	if (soDay > tempMB->soday || soDay < 1) return 1;
+	// kiem tra so day cho phep cua maybay
 	if (soDong > tempMB->sodong || soDong <1 ) return 1;
 	
-	for (int i=1; i<= tempCB->soLuongVe; i++){
+	// kiem tra ghe da ton tai
+	for (int i=1; i<= tempCB->soLuongVe; i++){ 
 		if ( (tempCB->ve[i]->soDong == soDong) and (tempCB->ve[i]->soDay==soDay)){
 			return 2;
 		}
 	}
-	
-		for (int i=1; i<= tempCB->soLuongVe; i++){
+	// kiem tra cmnd da ton tai trong cb
+	for (int i=1; i<= tempCB->soLuongVe; i++){
 		if ( strcmp( tempCB->ve[i]->cmnd, cmnd) ==0 )  {
 			return 3;
 		}
@@ -1321,7 +1463,7 @@ int KiemTraVeDat(CHUYENBAY *tempCB,MAYBAY *tempMB,char soVe[],char cmnd[]){
 	
 }
 
-void XuatGheNgoi(DS_CHUYENBAY &listCB,DS_MAYBAY &listMB,DS_HANHKHACH *&listHK,HANHKHACH &hanhkhach,char maCB[]){
+void XuatGheNgoi(DS_CHUYENBAY &listCB,DS_MAYBAY &listMB,DS_HANHKHACH *&listHK,HANHKHACH hanhkhach,char maCB[]){
 	int soDay=0,soDong=0;
 	char maMB[20];
 	CHUYENBAY *tempCB = new CHUYENBAY;
@@ -1351,10 +1493,11 @@ void XuatGheNgoi(DS_CHUYENBAY &listCB,DS_MAYBAY &listMB,DS_HANHKHACH *&listHK,HA
 	for (int i=1; i<= soDay; i++)
 		for (int j=1; j<=soDong; j++){
 			gotoxy(8+i*15,13+j);
+			// doi so sang A,B,C...
 			cout << char (64+i) << j;
 			if(KiemTraGheTrong(tempCB->ve,tempCB->soLuongVe,i,j) == 1){
-			gotoxy(8+i*15,13+j);
-			cout << "*****";
+				gotoxy(8+i*15,13+j);
+				cout << "*****";
 			}
 		}
 	cout << endl<< "==================================================================================================="<<endl;
@@ -1387,15 +1530,39 @@ x:	cout << "Nhap (Thoat) de tro ve." << endl;
 				default: goto x;	
 			}		
 	}
-	DatVe(listCB,listHK,tempCB,hanhkhach,soVe);
+	DatVe(listCB,listHK,listMB,tempCB,hanhkhach,soVe);
 }
 void MenuDatVe(DS_CHUYENBAY &listCB,DS_MAYBAY &listMB,DS_HANHKHACH *&listHK){
-	char maCB[15],soVe[15];
-	HANHKHACH hanhkhach;
+	char maCB[15],soVe[15],cmnd[50];
+	HANHKHACH *hanhkhach = new HANHKHACH;
 	//nhap thong tin ve va tra ve
-
-	if(NhapThongTinHK(hanhkhach) == 0) return;
+  system("cls");	
+	HinhVuong(30,10,75,25);
+	gotoxy(25,26);
+	cout << "_ CMND phai la so. 9 hoac 12 chu so " ;
+	gotoxy(42,13);
+	cout << "===NHAP SO CMND===";
+  a:	gotoxy(35,15);
+	cout <<"CMND: ";
+	fflush(stdin);
+	gets(cmnd);
+	InHoa(cmnd);
+	if(strlen(cmnd) == 0)	return;
+	
+	if(KiemTraSo(cmnd) == 0 || (strlen(cmnd) != 9 && strlen(cmnd) != 12)){
+		gotoxy(35,15);
+		cout << "                        ";
+		goto a;
+	}
+	if (HanhKhachCoTonTai(listHK, cmnd)) {
+	Search_BTS(listHK,*hanhkhach,cmnd);
+	} else {
+		strcpy(hanhkhach->cmnd, cmnd);
+		if(NhapThongTinHK(*hanhkhach) == 0) return;
+	}
 	system("cls");
+	cout << "				=======THONG TIN HANH KHACH=======" << endl;
+	InThongTinHanhKhach(*hanhkhach);
 	cout << "				=======DANH SACH CHUYEN BAY=======" << endl;
 	XuatChuyenBayTrongDSV(listCB);
 x:	cout << "Nhap (THOAT) de tro ve" << endl;
@@ -1403,16 +1570,23 @@ x:	cout << "Nhap (THOAT) de tro ve" << endl;
 	gets(maCB);
 	InHoa(maCB);
 	if(strcmp(maCB,"THOAT") == 0) return;
-	while(KiemTraKhoangTrang(maCB)==0 || strlen(maCB)==0){
-		cout << "Khong Duoc Chua Khoang Trang." << endl;
-		goto x;
-	}
-	
+	switch (KiemTraMaCB(listCB,maCB)==0 ? 1 : 0 | ChuyenBayCoTheXoaSua(listCB, maCB)==0 ? 2 : 0)
+			{
+			case 1:  
+					std::cout << ">>> Chuyen bay khong ton tai!!! Moi nhap lai: " << std::endl;
+					Sleep(500);
+					goto x;
+					break; // skipped
+			case 2: // Match!
+					std::cout << ">>> Khong the DAT VE, do chuyen bay da HET VE hoac DA HOAN TAT !!!" << std::endl;
+					Sleep(500);
+					goto x;
+			}
 	//datve trong xuatghengoi
-	XuatGheNgoi(listCB,listMB,listHK,hanhkhach,maCB);
+	XuatGheNgoi(listCB,listMB,listHK,*hanhkhach,maCB);
 }
 //d
-void HuyVe(DS_CHUYENBAY &listCB,DS_HANHKHACH *&listHK){
+void HuyVe(DS_CHUYENBAY &listCB,DS_HANHKHACH *&listHK, DS_MAYBAY listMB){
 	char maCB[100],tempCMND[15];
 x:	system("cls");
 	cout << "	        	==================== HUY VE =======================" ;
@@ -1423,13 +1597,14 @@ x:	system("cls");
 	gotoxy(33,3);
 	cout << "Nhap CMND: ";
 	gets(tempCMND);
-	while(KiemTraSo(tempCMND) == 0  || KiemTraKhoangTrang(tempCMND)==0 ){
+	if(strlen(tempCMND) == 0) return;
+	if(KiemTraSo(tempCMND) == 0  || KiemTraKhoangTrang(tempCMND)==0 ){
 		system("cls");
-		cout << "CMND La So Va Khong Bo Trong Bo Trong";
+		cout << "CMND La So Va Khong Chua Khoang Trang";
 		Sleep(1500);
 		goto x;	
 	}
-	while (atoi(tempCMND)<1 || strlen(tempCMND) !=10 ){
+	if (atoi(tempCMND)<1 || (strlen(tempCMND) != 9 && strlen(tempCMND) != 12) ){
 		system("cls");
 		cout << "CMND Khong Dung";
 		Sleep(1000);
@@ -1440,18 +1615,28 @@ x:	system("cls");
 	cout <<"NHAP MA CHUYEN BAY: ";
 	gets(maCB);
 	InHoa(maCB);
-	while(KiemTraKhoangTrang(maCB)==0 || strlen(maCB) == 0){
+	if(strlen(maCB) == 0) return;
+	if(KiemTraKhoangTrang(maCB)==0 ){
 		system("cls");
 		cout << "Ma Chuyen Bay Khong Duoc chua Khong Trang Hoac Bo Trong";
 		Sleep(1500);
 		goto x;	
 	}
-	while( KiemTraMaCB(listCB,maCB)==0 ){
-		system("cls");
-		cout << "Ma Chuyen Bay Khong Tong Tai";
-		Sleep(1000);
-		goto x;
-	}
+
+	switch (KiemTraMaCB(listCB,maCB)==0 ? 1 : 0 | ChuyenBayDaHoanTat(listCB, maCB)==0 ? 2 : 0)
+			{
+			case 1:  
+					system("cls");
+					std::cout << ">>> Chuyen bay khong ton tai!!! Moi nhap lai: " << std::endl;
+					Sleep(1000);
+					goto x;
+					break; // skipped
+			case 2: // Match!
+					system("cls");
+					std::cout << ">>> Khong the HUY VE, do chuyen bay DA HOAN TAT !!!" << std::endl;
+					Sleep(1000);
+					goto x;
+			}
 	
 	CHUYENBAY *tempCB;
 	int check=1;
@@ -1464,15 +1649,14 @@ x:	system("cls");
 	}
 	if (check == 1){
 		system("cls");
-		cout << "Ve Hoac So CMND Khong Ton Tai";
+		cout << "Ve Hoac So CMND Khong Ton Tai Trong CB";
 		Sleep(2000);
 		return;
 	}
 	
-	check = 1;
-	
-	for(int i=0; i<tempCB->soLuongVe; i++){
-		if (tempCB->ve[i]->cmnd == tempCMND) {
+	check =1;
+	for(int i=1; i<= tempCB->soLuongVe; i++){
+		if (strcmp(tempCB->ve[i]->cmnd, tempCMND) == 0) {
 			check = 0;
 			break;
 		}
@@ -1484,20 +1668,20 @@ x:	system("cls");
 		return;
 	}
 	
+	//xoa hk
 	listHK = XoaHanhKhach(listHK, tempCMND);
-	
+	// xoa ve
 	for (int i=1; i<=tempCB->soLuongVe; i++){
 		if(strcmp(tempCB->ve[i]->cmnd, tempCMND) == 0) {
 			for (int j=i; j<tempCB->soLuongVe; j++){
 				tempCB->ve[j] = tempCB->ve[j+1];
 			}
 			tempCB->soLuongVe--;
-			
+			break;
 		}
 	}
 	
-	
-	SaveCB(listCB,listHK);
+	SaveCB(listCB,listHK,listMB);
 	SaveHK(listHK);
 	system("cls");
 	cout << "Da Huy Ve!!!" ;
@@ -1512,14 +1696,14 @@ x:	system("cls");
 	fflush(stdin);
 	gets(maCB);
 	InHoa(maCB);
-	
-	while(!KiemTraMaCB(listCB,maCB)){
+	if(strlen(maCB)==0) return;
+	if(KiemTraMaCB(listCB,maCB) == 0){
 		system("cls");
 		cout << "Ma Chuyen Bay Khong Ton Tai";
 		Sleep(2000);
 		return;
 	}
-	while(KiemTraKhoangTrang(maCB)==0 || strlen(maCB)==0){
+	if(KiemTraKhoangTrang(maCB)==0){
 		system("cls");
 		cout << "Ma Chuyen Bay Khong Duoc Chua Khoang Trang Hoac Bo Trong";
 		goto x;
@@ -1528,18 +1712,17 @@ x:	system("cls");
 	for (k=listCB.pFirst;k!=NULL;k=k->next){
 		if ( strcmp(k->machuyenbay,maCB) == 0) break;
 	}
-	cout << k->ve[1]->cmnd;
 	HANHKHACH *tempHK = new HANHKHACH;
 	system("cls");
 	cout << "	DANH SACH HANH KHACH THUOC CHUYEN BAY " << k->machuyenbay << endl << endl;
 	cout << "Ngay Khoi Hanh: " << k->date.ngay <<"/" << k->date.thang <<"/" << k->date.nam << " " << k->time.gio << ":" << k->time.phut << "  Noi Den: " << k->sanbayden<<endl;
 	cout << "STT" << setw(10) << "	SO VE" << setw(13) << "	CMND" << setw(10) << "	HOTEN" << setw(10) << "	PHAI" << endl;
+
 	for (int i=1; i<= k->soLuongVe; i++){
 		cout << i << setw(10) << char(k->ve[i]->soDay + 64) << k->ve[i]->soDong << setw(16) << k->ve[i]->cmnd << setw(16);
 		Search_BTS(listHK,*tempHK,k->ve[i]->cmnd);
 		cout << tempHK->ho <<" "<< tempHK->ten << setw(16) << tempHK->phai << endl;
 	}
-	
 	
 	char luachon[5];
 	cout << "Nhap (THOAT) de tro ve: ";
@@ -1569,19 +1752,30 @@ x:	system("cls");
 		Sleep(2000);
 		goto x;
 	}
-	
+	char ngay[10],thang[10],nam[10];
 	cout << "== Nhap thoi gian =="<<endl;
-	cout<<"Ngay: "; cin >>date.ngay;	
-	cout << "Thang: "; cin >> date.thang;
-	cout << "Nam: "; cin >> date.nam;
+	cout<<"Ngay: "; 	
+	gets(ngay);
+	if(strlen(ngay) == 0) return;
+	cout << "Thang: "; 
+	gets(thang);
+	if(strlen(thang) == 0) return;
+	cout << "Nam: "; 
+	gets(nam);
+	if(strlen(nam) == 0) return;
+	date.ngay = atoi(ngay);
+	date.thang = atoi(thang);
+	date.nam = atoi(nam);
 	int i;
-	cout << "Ma Chuyen Bay" << setw(13) << "Thoi Gian" << setw(16) << "So Luong" << endl;
+	system("cls");
+	cout << "Ma Chuyen Bay" << right << setw(13) << "Thoi Gian" << right <<setw(16) << "\tSo Luong" << endl;
 	for (CHUYENBAY *k=listCB.pFirst; k!=NULL; k=k->next){
 		if(SoSanhDate(date,k->date) && strcmp(k->sanbayden,sanBayDen) == 0){
+			// tim kiem phan tu chuyen bay
 			for( i=1; i<= listMB.soluong; i++){
 				if (strcmp(k->sohieuMB,listMB.DSMayBay[i]->sohieuMB) == 0) break;
 			}
-			cout << k->machuyenbay << setw(13)<< "(" << k->time.gio <<":" << k->time.phut << ")" << k->date.ngay << "/" << k->date.thang << "/" << k->date.nam << setw(13)
+			cout << k->machuyenbay << right << setw(13)<< "(" << k->time.gio <<":" << k->time.phut << ")" << k->date.ngay << "/" << k->date.thang << "/" << k->date.nam << right <<setw(16)
 			<< (listMB.DSMayBay[i]->soday* listMB.DSMayBay[i]->sodong)- k->soLuongVe << endl;
 		}	
 	}
@@ -1603,9 +1797,10 @@ x:	system("cls");
 void InDanhSachGheCuaChuyenBay(DS_CHUYENBAY &listCB,DS_MAYBAY &listMB){
 	char maCB[15]={};
 	char maMB[15],chon[2];
+	int soDay,soDong;
 	CHUYENBAY *tempCB;
 	MAYBAY *tempMB;
-	int soDay,soDong;
+ 
 	start:
 	system("cls");
 	cout << "\n\n\t\t  ==============TRA CUU DANH SACH GHE TREN CHUYEN BAY==============" << endl;
@@ -1615,31 +1810,32 @@ void InDanhSachGheCuaChuyenBay(DS_CHUYENBAY &listCB,DS_MAYBAY &listMB){
 	fflush(stdin);
 	gets(maCB);
 	InHoa(maCB);
+	if(strlen(maCB) == 0) return;
 	if(KiemTraKiTu(maCB) == 0){
 		system("cls");
-		cout << "KHONG DUOC CHUA KY TU DAC BIET HOAC KHOANG TRANG!!";
+		cout << "ERROR: KHONG DUOC CHUA KY TU DAC BIET HOAC KHOANG TRANG!!";
 		Sleep(1000);
 		goto start;
 	}
-	if(strlen(maCB) == 0 || KiemTraKhoangTrang(maCB) == 0){
+	if( KiemTraKhoangTrang(maCB) == 0){
 		system("cls");
-		cout << "KHONG DUOC DE TRONG HOAC CO KHOANG TRANG!!";
+		cout << "ERROR: KHONG DUOC DE TRONG HOAC CO KHOANG TRANG!!";
 		Sleep(1000);
 		goto start;
 	}
 	if(KiemTraMaCB(listCB,maCB) == 0){
 		system("cls");
-		cout << "CHUYEN BAY KHONG TON TAI!!";
-		Sleep(1000);
+		cout << "ERROR: CHUYEN BAY KHONG TON TAI!!";
+		Sleep(1000);	
 		goto start;
 	}
-	if (strcmp(maCB,"THOAT") == 0) return;
-
 	
+
 	system("cls");
 	cout << "\n\t\t     ==============TRA CUU DANH SACH GHE TREN CHUYEN BAY==============" << endl;
 	cout << "\n\n\n\t\tCHUYENBAY: " << maCB << endl;
 	// tim cb
+	// tim ra cai node luu chuyen bay
 	for (CHUYENBAY *k=listCB.pFirst; k!=NULL; k=k->next){
 		if (strcmp(k->machuyenbay,maCB) == 0) {
 			strcpy(maMB,k->sohieuMB);
@@ -1648,7 +1844,7 @@ void InDanhSachGheCuaChuyenBay(DS_CHUYENBAY &listCB,DS_MAYBAY &listMB){
 		}
 	}
 	gotoxy(35,10);
-//	cout << "========== MOI CHON GHE NGOI ==========" << endl;
+	
 	// tim so day so dong cua maybay
 	for (int i=1; i<= listMB.soluong; i++){
 		if ( strcmp(listMB.DSMayBay[i]->sohieuMB,maMB) == 0) {
@@ -1658,39 +1854,42 @@ void InDanhSachGheCuaChuyenBay(DS_CHUYENBAY &listCB,DS_MAYBAY &listMB){
 			break;
 		}
 	}
+	
 	// danh dau nhung ghe da dat
+	// i soday, j so dong
 	for (int i=1; i<= soDay; i++)
 		for (int j=1; j<=soDong; j++){
 			gotoxy(8+i*15,8+j);
 			cout << char (64+i) << j;
 			if(KiemTraGheTrong(tempCB->ve,tempCB->soLuongVe,i,j) == 1){
-			gotoxy(8+i*15,8+j);
-			cout << "*****";
+				gotoxy(8+i*15,8+j);
+				cout << "*****";
 			}
 		}
 	cout << endl<< "==================================================================================================="<<endl;
 
-	while( strcmp(chon,"THOAT") !=0){
+	while(strcmp(chon,"THOAT") !=0){
 		cout << "Nhap (THOAT) de thoat: ";
 		fflush(stdin);
 		gets(chon);
 		InHoa(chon);
 	}
 }
-// h
+//h
 void ThongKeSoLanThucHienChuyenBay(DS_CHUYENBAY &listCB,DS_MAYBAY &listMB){
 	int thongke[300] = {};
 	DS_MAYBAY tempListMB = listMB;
-	// gan ma chuyen bay va so luong ve ban tu DSLK vao mang
 	
+	
+	// gan ma chuyen bay va so luong ve ban tu DSLK vao mang
 	for(CHUYENBAY *k=listCB.pFirst ; k!=NULL; k=k->next){
 		int i=1;
 		char tempMaCB[15];
 		 
 		for ( i; i< listMB.soluong; i++)
 			if ( strcmp(tempListMB.DSMayBay[i]->sohieuMB,k->sohieuMB) == 0) break;
-				thongke[i]++;
-		
+			
+		thongke[i]++;
 	}
 	
 	// selection sort
@@ -1699,7 +1898,7 @@ void ThongKeSoLanThucHienChuyenBay(DS_CHUYENBAY &listCB,DS_MAYBAY &listMB){
 		max = i;
 		for(int k=i+1; k<=listMB.soluong; k++)
 			if(thongke[max] < thongke[k]) max = k;
-		
+	
 		swap(thongke[i],thongke[max]);
 		swap(tempListMB.DSMayBay[i],tempListMB.DSMayBay[max]);
 	}
@@ -1707,7 +1906,7 @@ void ThongKeSoLanThucHienChuyenBay(DS_CHUYENBAY &listCB,DS_MAYBAY &listMB){
 	system("cls");
 	cout << "\n\t\t       ==============So Lan Thuc Hien Chuyen Bay==============" << endl;
 	cout << "\n\t   SoHieuMayBay \t\t LoaiMayBay \t\t\t SoLuot "<< endl;
-	for(int i=1; i<listMB.soluong+1; i++){
+	for(int i=1; i<= listMB.soluong; i++){
 		//cout << "\n\t      " << tempListMB.DSMayBay[i]->sohieuMB << "\t\t\t   " 
 		cout <<setw(20) << right << tempListMB.DSMayBay[i]->sohieuMB;
 		cout << setw(28) << right << tempListMB.DSMayBay[i]->loai;
@@ -1755,7 +1954,9 @@ int Menu(){
 
 }
 int main(){	
-
+	DS_MAYBAY listMB;
+	DS_CHUYENBAY listCB;
+	DS_HANHKHACH *listHK = NULL;
 	LoadMB(listMB);
 	LoadCB(listCB);
 	LoadHK(listHK);
@@ -1768,7 +1969,7 @@ int main(){
 			break;
 		}
 		case 2: {
-			MenuDanhSachMayBay(listMB);
+			MenuDanhSachMayBay(listMB,listCB);
 			break;
 		}
 		case 3:{
@@ -1776,7 +1977,7 @@ int main(){
 			break;
 		}
 		case 4:{
-			HuyVe(listCB,listHK);
+			HuyVe(listCB,listHK,listMB);
 			break;
 		}
 		case 5: {
